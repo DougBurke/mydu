@@ -13,13 +13,15 @@ import System.Exit
 import System.Environment
 import System.Directory
 import System.FilePath
+import System.IO
 import System.Posix.Files
 import qualified System.IO.Error as E
 
 import Text.Printf 
 
-import Data.Maybe (isJust)
-import Data.Either (rights)
+import Data.Maybe (isJust, catMaybes)
+import Control.Exception (bracket, handle)
+import Control.Monad (unless)
 
 {-
 Given a directory, find all its components:
@@ -90,18 +92,29 @@ ls dname = E.try ls'
 
 {-
 Given a directory and filename, return the length of the file
-in bytes.
--}
+in bytes. This is taken from Real World Haskell (chapter 9, page 221)
+since the
+combination of fmap filesize (getFileStatus (dname </> fname))
+using System.Pisux.Files seems to return garbage results.
+
 getFileSize :: FilePath -> FilePath -> IO (Either IOError Integer)
 getFileSize dname fname = E.try $ fmap (fromIntegral . fileSize) (getFileStatus (dname </> fname))
 
+-}
+
+ignoreIOError :: IOError -> IO (Maybe a)
+ignoreIOError = const (return Nothing)
+
+getFileSize :: FilePath -> FilePath -> IO (Maybe Integer)
+getFileSize dname fname = handle ignoreIOError $
+  bracket (openFile (dname </> fname) ReadMode) hClose $ fmap Just . hFileSize
+
 {-
 Return the number of bytes occupied by the files in the
-current directory. We return those files for which we
-can not find a size.
+current directory.
 -}
 getFileSizes :: FilePath -> [FilePath] -> IO Integer
-getFileSizes dName = fmap (sum . rights) . mapM (getFileSize dName) 
+getFileSizes dName = fmap (sum . catMaybes) . mapM (getFileSize dName) 
 
 {-
 Calculate the size of a directory, including its sub-components.
@@ -126,12 +139,12 @@ when nb =1024 * 1024 - 10 say.  Could clean this up.
 -}
 prettify :: Integer -> String
 prettify nb | nb == 1 = "1 byte"
-            | nb < 1024 = printf "%d bytes" nb
-            | nb < 1024 * 1024 = printf "%.2f Kb" (nbf 1)
-            | nb < 1024 * 1024 * 1024 = printf "%.2f Mb" (nbf 2)
+            | nb < 1024 = printf "%4d bytes" nb
+            | nb < 1024 * 1024 = printf "%7.2f Kb" (nbf 1)
+            | nb < 1024 * 1024 * 1024 = printf "%7.2f Mb" (nbf 2)
             | otherwise = printf "%.2f Gb" (nbf 3)
     where
-      nbf p = ((fromIntegral nb :: Float) / (1024**p))
+      nbf p = (fromIntegral nb :: Float) / (1024**p)
 
 listSizes :: FilePath -- ^ directory to use
           -> IO ()
@@ -148,7 +161,7 @@ listSizes dname = do
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
              mapM_ dispDir (zip (dirs dc) dss)
-             dispLine "+ files" fs
+             unless (fs == 0) $ dispLine "+ files" fs
              putStrLn $ "Total: " ++ prettify (fs + sum dss)
              exitSuccess
 
