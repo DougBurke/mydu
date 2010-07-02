@@ -5,3 +5,7 @@ syntax: glob
 *.o
 
 mydu
+
+syntax: regexp
+(.*/)?\#[^/]*\#$
+
