@@ -16,6 +16,8 @@ import System.FilePath
 import System.Posix.Files
 import qualified System.IO.Error as E
 
+import Text.Printf 
+
 import Data.Maybe (isJust)
 import Data.Either (rights)
 
@@ -116,7 +118,21 @@ getDirSize pName dName = do
              fs <- getFileSizes curName (files dc)
              dss <- mapM (getDirSize curName) (dirs dc)
              return $ fs + sum dss
-  
+
+{-
+Convert a number of bytes into a human-readable string.
+Given the rounding we are doing, can get results like 1024.00 Kb
+when nb =1024 * 1024 - 10 say.  Could clean this up.
+-}
+prettify :: Integer -> String
+prettify nb | nb == 1 = "1 byte"
+            | nb < 1024 = printf "%d bytes" nb
+            | nb < 1024 * 1024 = printf "%.2f Kb" (nbf 1)
+            | nb < 1024 * 1024 * 1024 = printf "%.2f Mb" (nbf 2)
+            | otherwise = printf "%.2f Gb" (nbf 3)
+    where
+      nbf p = ((fromIntegral nb :: Float) / (1024**p))
+
 listSizes :: FilePath -- ^ directory to use
           -> IO ()
 listSizes dname = do
@@ -129,10 +145,11 @@ listSizes dname = do
              fs <- getFileSizes dname (files dc)
              dss <- mapM (getDirSize dname) (dirs dc)
              putStrLn $ "Size of directory: " ++ dname
-             let dispDir (dn,ds) = putStrLn $ "  " ++ dn ++ ": " ++ show ds
+             let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
+                 dispDir (dn,ds) = dispLine dn ds
              mapM_ dispDir (zip (dirs dc) dss)
-             putStrLn $ "  + files: " ++ show fs
-             putStrLn $ "Total: " ++ show (fs + sum dss)
+             dispLine "+ files" fs
+             putStrLn $ "Total: " ++ prettify (fs + sum dss)
              exitSuccess
 
 usage :: IO ()
