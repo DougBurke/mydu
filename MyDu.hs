@@ -20,6 +20,8 @@ import qualified System.IO.Error as E
 import Text.Printf 
 
 import Data.Maybe (isJust, catMaybes)
+import Data.Ord (comparing)
+import Data.List (sortBy)
 import Control.Exception (bracket, handle)
 import Control.Monad (unless)
 
@@ -138,7 +140,8 @@ Given the rounding we are doing, can get results like 1024.00 Kb
 when nb =1024 * 1024 - 10 say.  Could clean this up.
 -}
 prettify :: Integer -> String
-prettify nb | nb == 1 = "1 byte"
+prettify nb | nb == 0 = "empty"
+            | nb == 1 = "1 byte"
             | nb < 1024 = printf "%4d bytes" nb
             | nb < 1024 * 1024 = printf "%7.2f Kb" (nbf 1)
             | nb < 1024 * 1024 * 1024 = printf "%7.2f Mb" (nbf 2)
@@ -160,7 +163,9 @@ listSizes dname = do
              putStrLn $ "Size of directory: " ++ dname
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
-             mapM_ dispDir (zip (dirs dc) dss)
+                 dList = (zip (dirs dc) dss)
+                 orderedDirs = reverse $ sortBy (comparing snd) dList
+             mapM_ dispDir orderedDirs
              unless (fs == 0) $ dispLine "+ files" fs
              putStrLn $ "Total: " ++ prettify (fs + sum dss)
              exitSuccess
