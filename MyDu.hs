@@ -23,7 +23,7 @@ import Data.Maybe (isJust, catMaybes)
 import Data.Ord (comparing)
 import Data.List (sortBy)
 import Control.Exception (bracket, handle)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 
 {-
 Given a directory, find all its components:
@@ -145,13 +145,14 @@ prettify nb | nb == 0 = "empty"
             | nb < 1024 = printf "%4d bytes" nb
             | nb < 1024 * 1024 = printf "%7.2f Kb" (nbf 1)
             | nb < 1024 * 1024 * 1024 = printf "%7.2f Mb" (nbf 2)
-            | otherwise = printf "%.2f Gb" (nbf 3)
+            | otherwise = printf "%7.2f Gb" (nbf 3) -- can overflow but that's okay
     where
       nbf p = (fromIntegral nb :: Float) / (1024**p)
 
-listSizes :: FilePath -- ^ directory to use
+listSizes :: Bool -- ^ True if empty directories should be included in the output
+          -> FilePath -- ^ directory to use
           -> IO ()
-listSizes dname = do
+listSizes flag dname = do
   edc <- ls dname
   case edc of
     Left e -> do
@@ -163,27 +164,34 @@ listSizes dname = do
              putStrLn $ "Size of directory: " ++ dname
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
-                 dList = (zip (dirs dc) dss)
+                 dList = filter ((||) flag . (/=) 0 . snd) (zip (dirs dc) dss)
                  orderedDirs = reverse $ sortBy (comparing snd) dList
+                 eLine = putStrLn ""
              mapM_ dispDir orderedDirs
-             unless (fs == 0) $ dispLine "+ files" fs
+             unless (fs == 0) $ eLine >> dispLine "+ files" fs
+             eLine
              putStrLn $ "Total: " ++ prettify (fs + sum dss)
              exitSuccess
 
 usage :: IO ()
 usage = getProgName >>= \n -> 
-        putStrLn ("Usage: " ++ n ++ " [directory]") >> 
+        putStrLn ("Usage: " ++ n ++ " [-a] [directory]") >> 
         exitFailure
 
 main :: IO ()
 main = do
   args <- getArgs
   if null args
-    then listSizes "."
-    else if length args == 1
-       then listSizes (head args)
-       else usage
+    then listSizes False "."
+    else if length args > 2
+       then usage
+       else do
+         let flag = head args == "-a"
+             dname = if length args == 2 then (head . tail) args else if flag then "." else head args
+         when (length args == 2 && not flag) usage
+         listSizes flag dname
          
+
 
 
 
