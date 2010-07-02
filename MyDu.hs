@@ -5,7 +5,7 @@
 Display size of current directory and its sub-directories;
 a very=basic du.
 
-  ghc -Wall -o mydu MyDu.hs
+  ghc --make -Wall -O2 -o mydu MyDu.hs
 
 -}
 
@@ -161,8 +161,8 @@ listSizes flag dname = do
              putStrLn $ "Unable to get directory contents:\n  " ++ show e
              exitFailure
     Right dc -> do
-             fs <- getFileSizes dname (files dc)
-             dss <- mapM (getDirSize dname) (dirs dc)
+             !fs <- getFileSizes dname (files dc)
+             !dss <- mapM (getDirSize dname) (dirs dc)
              putStrLn $ "Size of directory: " ++ dname
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
