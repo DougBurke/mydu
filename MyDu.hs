@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 {-
 
 Display size of current directory and its sub-directories;
@@ -130,8 +132,8 @@ getDirSize pName dName = do
   case edc of
     Left _ -> return 0
     Right dc -> do 
-             fs <- getFileSizes curName (files dc)
-             dss <- mapM (getDirSize curName) (dirs dc)
+             !fs <- getFileSizes curName (files dc)
+             !dss <- mapM (getDirSize curName) (dirs dc)
              return $ fs + sum dss
 
 {-
