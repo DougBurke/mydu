@@ -15,7 +15,6 @@ import System.Exit
 import System.Environment
 import System.Directory
 import System.FilePath
-import System.IO
 import System.Posix.Files
 import qualified System.IO.Error as E
 
@@ -24,7 +23,6 @@ import Text.Printf
 import Data.Maybe (isJust, catMaybes)
 import Data.Ord (comparing)
 import Data.List (sortBy)
-import Control.Exception (bracket, handle)
 import Control.Monad (unless, when)
 
 {-
@@ -104,14 +102,20 @@ using System.Pisux.Files seems to return garbage results.
 getFileSize :: FilePath -> FilePath -> IO (Either IOError Integer)
 getFileSize dname fname = E.try $ fmap (fromIntegral . fileSize) (getFileStatus (dname </> fname))
 
--}
-
 ignoreIOError :: IOError -> IO (Maybe a)
 ignoreIOError = const (return Nothing)
 
 getFileSize :: FilePath -> FilePath -> IO (Maybe Integer)
 getFileSize dname fname = handle ignoreIOError $
   bracket (openFile (dname </> fname) ReadMode) hClose $ fmap Just . hFileSize
+
+It appears that getSymbolicLinkStatus works whereas getFileStatus
+doesn't on my laptop ...
+-}
+
+getFileSize :: FilePath -> FilePath -> IO (Maybe Integer)
+getFileSize dname fname = fmap (either (const Nothing) Just) $
+  E.try $ fmap (fromIntegral . fileSize) (getSymbolicLinkStatus (dname </> fname))
 
 {-
 Return the number of bytes occupied by the files in the
