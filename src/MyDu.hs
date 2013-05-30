@@ -3,9 +3,7 @@
 {-
 
 Display size of current directory and its sub-directories;
-a very=basic du.
-
-  ghc --make -Wall -O2 -o mydu MyDu.hs
+a very-basic du.
 
 -}
 
@@ -16,7 +14,8 @@ import System.Environment
 import System.Directory
 import System.FilePath
 import System.Posix.Files
-import qualified System.IO.Error as E
+-- import qualified System.IO.Error as E
+import qualified Control.Exception as E
 
 import Text.Printf 
 
@@ -61,12 +60,14 @@ emptyDir fp = DirContents fp [] [] []
 --
 getFileType :: FilePath -> IO (Maybe FileType)
 getFileType fp = E.catch (fmap (Just . processStatus) (getSymbolicLinkStatus fp))
-                 (return . const Nothing)
+                 handleIOError
     where
       processStatus fs | isDirectory fs    = Directory
                        | isSymbolicLink fs = Other
                        | otherwise         = File
 
+      handleIOError :: E.IOException -> IO (Maybe a)
+      handleIOError = return . const Nothing
 
 {-
 This excludes "." and ".."
@@ -112,8 +113,12 @@ doesn't on my laptop ...
 -}
 
 getFileSize :: FilePath -> FilePath -> IO (Maybe Integer)
-getFileSize dname fname = fmap (either (const Nothing) Just) $
-  E.try $ fmap (fromIntegral . fileSize) (getSymbolicLinkStatus (dname </> fname))
+getFileSize dname fname =
+  let handleIOError :: Either E.IOException Integer -> Maybe Integer
+      handleIOError = either (const Nothing) Just
+
+  in fmap handleIOError $
+     E.try $ fmap (fromIntegral . fileSize) (getSymbolicLinkStatus (dname </> fname))
 
 {-
 Return the number of bytes occupied by the files in the
@@ -191,7 +196,7 @@ main = do
        then usage
        else do
          let flag = head args == "-a"
-             dname | length arfs == 2 = (head . tail) args
+             dname | length args == 2 = (head . tail) args
                    | flag             = "."
                    | otherwise        = head args
          when (length args == 2 && not flag) usage
