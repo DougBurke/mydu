@@ -63,11 +63,9 @@ getFileType :: FilePath -> IO (Maybe FileType)
 getFileType fp = E.catch (fmap (Just . processStatus) (getSymbolicLinkStatus fp))
                  (return . const Nothing)
     where
-      processStatus fs = if isDirectory fs
-                            then Directory
-                            else if isSymbolicLink fs
-                                 then Other
-                                 else File
+      processStatus fs | isDirectory fs    = Directory
+                       | isSymbolicLink fs = Other
+                       | otherwise         = File
 
 
 {-
@@ -193,7 +191,9 @@ main = do
        then usage
        else do
          let flag = head args == "-a"
-             dname = if length args == 2 then (head . tail) args else if flag then "." else head args
+             dname | length arfs == 2 = (head . tail) args
+                   | flag             = "."
+                   | otherwise        = head args
          when (length args == 2 && not flag) usage
          listSizes flag dname
          
