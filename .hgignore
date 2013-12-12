@@ -5,6 +5,9 @@ syntax: glob
 *.o
 
 mydu
+.cabal-sandbox/
+cabal.sandbox.config
+dist/
 
 syntax: regexp
 (.*/)?\#[^/]*\#$
