@@ -177,7 +177,7 @@ listSizes flag dname = do
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
                  dList = filter ((||) flag . (/=) 0 . snd) (zip (dirs dc) dss)
-                 orderedDirs = reverse $ sortBy (comparing snd) dList
+                 orderedDirs = sortBy (flip (comparing snd)) dList
                  eLine = putStrLn ""
              mapM_ dispDir orderedDirs
              unless (fs == 0) $ eLine >> dispLine "+ files" fs
