@@ -8,6 +8,7 @@ mydu
 .cabal-sandbox/
 cabal.sandbox.config
 dist/
+.stack-work/
 
 syntax: regexp
 (.*/)?\#[^/]*\#$

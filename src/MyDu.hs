@@ -11,7 +11,7 @@ module Main where
 
 import System.Exit
 import System.Environment
-import System.Directory
+import System.Directory hiding (getFileSize, isSymbolicLink)
 import System.FilePath
 import System.Posix.Files
 -- import qualified System.IO.Error as E
@@ -96,7 +96,7 @@ Given a directory and filename, return the length of the file
 in bytes. This is taken from Real World Haskell (chapter 9, page 221)
 since the
 combination of fmap filesize (getFileStatus (dname </> fname))
-using System.Pisux.Files seems to return garbage results.
+using System.Posix.Files seems to return garbage results.
 
 getFileSize :: FilePath -> FilePath -> IO (Either IOError Integer)
 getFileSize dname fname = E.try $ fmap (fromIntegral . fileSize) (getFileStatus (dname </> fname))
@@ -110,6 +110,9 @@ getFileSize dname fname = handle ignoreIOError $
 
 It appears that getSymbolicLinkStatus works whereas getFileStatus
 doesn't on my laptop ...
+
+I am not bothering to check if the System.Directory.getFileSize routine
+works as we need it (it wasn't available when the code was written).
 -}
 
 getFileSize :: FilePath -> FilePath -> IO (Maybe Integer)
