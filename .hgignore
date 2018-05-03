@@ -9,6 +9,7 @@ mydu
 cabal.sandbox.config
 dist/
 .stack-work/
+result/
 
 syntax: regexp
 (.*/)?\#[^/]*\#$
