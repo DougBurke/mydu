@@ -20,8 +20,8 @@ import qualified Control.Exception as E
 import Text.Printf 
 
 import Data.Maybe (isJust, catMaybes)
-import Data.Ord (comparing)
-import Data.List (sortBy)
+import Data.Ord (Down(Down))
+import Data.List (sortOn)
 import Control.Monad (unless, when)
 
 {-
@@ -177,7 +177,7 @@ listSizes flag dname = do
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
                  dList = filter ((||) flag . (/=) 0 . snd) (zip (dirs dc) dss)
-                 orderedDirs = sortBy (flip (comparing snd)) dList
+                 orderedDirs = sortOn (Down . snd) dList
                  eLine = putStrLn ""
              mapM_ dispDir orderedDirs
              unless (fs == 0) $ eLine >> dispLine "+ files" fs
