@@ -19,10 +19,12 @@ import qualified Control.Exception as E
 
 import Text.Printf 
 
-import Data.Maybe (isJust, catMaybes)
-import Data.Ord (Down(Down))
-import Data.List (sortOn)
+import Control.Arrow (second)
 import Control.Monad (unless, when)
+
+import Data.List (sortOn)
+import Data.Maybe (isJust, fromJust, catMaybes)
+import Data.Ord (Down(Down))
 
 {-
 Given a directory, find all its components:
@@ -83,7 +85,7 @@ ls dname = E.try ls'
         -- note we filter out '.' and '..' here
         let xs = filter (isJust . snd) $ zip fs ts
             ys = filter ((`notElem` [".", ".."]) . fst) xs
-            zs = map (\(a,Just b) -> (a,b)) ys
+            zs = map (second fromJust) ys
 
             conv (fp, Directory) inDir = inDir { dirs = fp : dirs inDir }
             conv (fp, File)      inDir = inDir { files = fp : files inDir }
