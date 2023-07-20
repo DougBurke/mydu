@@ -1,7 +1,7 @@
 cabal-version:  2.4
 
 name:      mydu
-version:   1.0
+version:   1.1
 synopsis:  A basic recursive du
 description:
   A version of du that recurses through all the sub-directories and
@@ -17,6 +17,11 @@ executable mydu
   hs-source-dirs:  src
   main-is:         MyDu.hs
 
+  -- other-modules:   PackageInfo_mydu
+  -- autogen-modules: PackageInfo_mydu
+  other-modules:   Paths_mydu
+  autogen-modules: Paths_mydu
+
   build-depends:
      base >= 4.6 && < 5.0,
      -- to avoid conditional code to deal with changes in directory,
@@ -29,4 +34,3 @@ executable mydu
 
   ghc-options:
      -Wall
-
