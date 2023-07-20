@@ -9,22 +9,28 @@ a very-basic du.
 
 module Main where
 
+-- import qualified System.IO.Error as E
+import qualified Control.Exception as E
+import qualified System.Info as SI
+
+-- import qualified PackageInfo_mydu as P
+import qualified Paths_mydu as P
+
 import System.Exit
 import System.Environment
 import System.Directory hiding (getFileSize, isSymbolicLink)
 import System.FilePath
 import System.Posix.Files
--- import qualified System.IO.Error as E
-import qualified Control.Exception as E
 
 import Text.Printf 
 
 import Control.Arrow (second)
-import Control.Monad (unless, when)
+import Control.Monad (unless)
 
 import Data.List (sortOn)
 import Data.Maybe (isJust, fromJust, catMaybes)
 import Data.Ord (Down(Down))
+import Data.Version (showVersion)
 
 {-
 Given a directory, find all its components:
@@ -189,25 +195,50 @@ listSizes flag dname = do
 
 usage :: IO ()
 usage = getProgName >>= \n -> 
-        putStrLn ("Usage: " ++ n ++ " [-a] [directory]") >> 
+        putStrLn ("Usage: " ++ n ++ " [-a|-h|-v] [directory]") >> 
         exitFailure
+
+reportVersion :: IO ()
+reportVersion = do
+  name <- getProgName
+  putStrLn (name <> ": v" <> showVersion P.version <> " (" <>
+           SI.compilerName <> " " <> showVersion SI.fullCompilerVersion <>
+           " " <> SI.os <> " " <> SI.arch <> ")")
+  exitSuccess
+
+
+data Args = Args {
+     help :: Bool,
+     version :: Bool,
+     allFiles :: Bool,
+     location :: String }
+
+defArgs :: Args
+defArgs = Args { help = False, version = False, allFiles = False, location = "." }
+
+
+-- Muddle through without a proper parser for now
+processArgs :: [String] -> Maybe Args
+processArgs [] = Just defArgs
+processArgs ["-h"] = Just $ defArgs { help = True }
+processArgs ["-a"] = Just $ defArgs { allFiles = True }
+processArgs ["-v"] = Just $ defArgs { version = True }
+processArgs [loc] = Just $ defArgs { location = loc }
+processArgs ["-a", loc] = Just $ defArgs { allFiles = True, location = loc }
+processArgs ["-h", loc] = Just $ defArgs { help = True, location = loc }  -- could make this an error
+processArgs ["-v", loc] = Just $ defArgs { version = True, location = loc }  -- could make this an error
+processArgs _ = Nothing
+
 
 main :: IO ()
 main = do
-  args <- getArgs
-  if null args
-    then listSizes False "."
-    else if length args > 2
-       then usage
-       else do
-         let flag = head args == "-a"
-             dname | length args == 2 = (head . tail) args
-                   | flag             = "."
-                   | otherwise        = head args
-         when (length args == 2 && not flag) usage
-         listSizes flag dname
-         
+  mArgs <- processArgs <$> getArgs
+  case mArgs of
+    Just args -> do
+      if help args
+      then usage
+      else if version args
+           then reportVersion
+           else listSizes (allFiles args) (location args)
 
-
-
-
+    Nothing -> usage
