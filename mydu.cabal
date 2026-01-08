@@ -1,7 +1,7 @@
 cabal-version:  2.4
 
 name:      mydu
-version:   1.1
+version:   1.2
 synopsis:  A basic recursive du
 description:
   A version of du that recurses through all the sub-directories and

@@ -173,15 +173,16 @@ listSizes :: Bool -- ^ True if empty directories should be included in the outpu
           -> FilePath -- ^ directory to use
           -> IO ()
 listSizes flag dname = do
-  edc <- ls dname
+  fullName <- canonicalizePath dname
+  putStrLn $ "Size of directory: " ++ fullName
+  edc <- ls fullName
   case edc of
     Left e -> do
              putStrLn $ "Unable to get directory contents:\n  " ++ show e
              exitFailure
     Right dc -> do
-             !fs <- getFileSizes dname (files dc)
-             !dss <- mapM (getDirSize dname) (dirs dc)
-             putStrLn $ "Size of directory: " ++ dname
+             !fs <- getFileSizes fullName (files dc)
+             !dss <- mapM (getDirSize fullName) (dirs dc)
              let dispLine n s = putStrLn $ printf "  %-50s  %s" n (prettify s)
                  dispDir (dn,ds) = dispLine dn ds
                  dList = filter ((||) flag . (/=) 0 . snd) (zip (dirs dc) dss)
